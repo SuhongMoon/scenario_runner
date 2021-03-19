@@ -536,7 +536,8 @@ def main():
         '--agent', help="Agent used to execute the scenario. Currently only compatible with route-based scenarios.")
     parser.add_argument('--agentConfig', type=str, help="Path to Agent's configuration file", default="")
 
-    parser.add_argument('--output', action="store_true", help='Provide results on stdout')
+    # parser.add_argument('--output', action="store_true", help='Provide results on stdout')
+    parser.add_argument('--no_output', action="store_false", dest='output', help='Do not provide results on stdout')
     parser.add_argument('--file', action="store_true", help='Write results into a txt file')
     parser.add_argument('--junit', action="store_true", help='Write results into a junit file')
     parser.add_argument('--json', action="store_true", help='Write results into a JSON file')
@@ -546,8 +547,10 @@ def main():
     parser.add_argument('--additionalScenario', default='', help='Provide additional scenario implementations (*.py)')
 
     parser.add_argument('--debug', action="store_true", help='Run with debug output')
-    parser.add_argument('--reloadWorld', action="store_true",
-                        help='Reload the CARLA world before starting a scenario (default=True)')
+    # parser.add_argument('--reloadWorld', action="store_true",
+    #                     help='Reload the CARLA world before starting a scenario (default=True)')
+    parser.add_argument('--not_reloadworld', action="store_false", dest='reloadWorld',
+                        help='Do not reload the CARLA world before starting a scenario (default=False)')
     parser.add_argument('--record', type=str, default='',
                         help='Path were the files will be saved, relative to SCENARIO_RUNNER_ROOT.\nActivates the CARLA recording feature and saves to file all the criteria information.')
     parser.add_argument('--randomize', action="store_true", help='Scenario parameters are randomized')
@@ -556,7 +559,7 @@ def main():
 
     arguments = parser.parse_args()
     # pylint: enable=line-too-long
-
+    import pdb;pdb.set_trace()
     if arguments.list:
         print("Currently the following scenarios are supported:")
         print(*ScenarioConfigurationParser.get_list_of_scenarios(arguments.configFile), sep='\n')
