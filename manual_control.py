@@ -22,17 +22,8 @@ Use ARROWS or WASD keys for control.
     P            : toggle autopilot
     M            : toggle manual transmission
     ,/.          : gear up/down
+    CTRL + W     : toggle constant velocity mode at 60 km/h
 
-    L            : toggle next light type
-    SHIFT + L    : toggle high beam
-    Z/X          : toggle right/left blinker
-    I            : toggle interior light
-
-    TAB          : change sensor position
-    ` or N       : next sensor
-    [1-9]        : change to sensor [1-9]
-    G            : toggle radar visualization
-    C            : change weather (Shift+C reverse)
 
     R            : toggle recording images to disk
 
@@ -55,8 +46,9 @@ from __future__ import print_function
 
 import carla
 
-from examples.manual_control import (World, HUD, KeyboardControl, CameraManager,
-                                     CollisionSensor, LaneInvasionSensor, GnssSensor, IMUSensor)
+from utils.manual_control_utils import World, HUD, KeyboardControl, CameraManager, CollisionSensor, LaneInvasionSensor, GnssSensor, IMUSensor
+from utils.sensor_utils import CarlaSyncMode, get_labels, parsing_data
+from utils.data_saver_utils import HDF5Saver
 
 import os
 import argparse
@@ -130,10 +122,16 @@ class WorldSR(World):
 # -- game_loop() ---------------------------------------------------------------
 # ==============================================================================
 
+import matplotlib.pyplot as plt
+
 def game_loop(args):
     pygame.init()
     pygame.font.init()
+
     world = None
+    record_cameras = []
+
+    data_saver = None#HDF5Saver(args.cam_width, args.cam_height, args.save_name)
 
     try:
         client = carla.Client(args.host, args.port)
@@ -144,27 +142,64 @@ def game_loop(args):
             pygame.HWSURFACE | pygame.DOUBLEBUF)
 
         hud = HUD(args.width, args.height)
-        world = WorldSR(client.get_world(), hud, args)
+        # world = WorldSR(client.get_world(), hud, args) 
+        world = World(client.get_world(), hud, args) # Debugging
         controller = KeyboardControl(world, args.autopilot)
-
         clock = pygame.time.Clock()
-        while True:
-            clock.tick_busy_loop(60)
-            if controller.parse_events(client, world, clock):
-                return
-            if not world.tick(clock):
-                return
-            world.render(display)
-            pygame.display.flip()
+
+        with CarlaSyncMode(world.world,  *[], fps=10) as sync_mode:
+            while True:
+                clock.tick_busy_loop(60)
+                if controller.parse_events(client, world, clock):
+                    return
+                world.tick(clock)
+                world.render(display)
+                sync_mode.tick(1.0)
+                pygame.display.flip()
+
+                center_img = world.camera_manager.data_cam_images['rgb']
+                right_img = world.camera_manager.data_cam_images['rgb_right']
+                left_img = world.camera_manager.data_cam_images['rgb_left']
+
+                print(center_img.shape)
+                print(right_img.shape)
+                print(left_img.shape)
+
+                if world.camera_manager.recording:
+                    if data_saver is None:
+                        data_saver = HDF5Saver(args.cam_width, args.cam_height, args.save_name)
+
+                    labels_dict = get_labels(world)
+                    center_img = world.camera_manager.data_cam_images['rgb']
+                    right_img = world.camera_manager.data_cam_images['rgb_right']
+                    left_img = world.camera_manager.data_cam_images['rgb_left']
+
+                    print(center_img.shape)
+                    print(right_img.shape)
+                    print(left_img.shape)
+                
+                else:
+                    if data_saver is not None:
+                        data_saver.close_HDF5()
+                    data_saver = None
 
     finally:
-
+        
         if (world and world.recording_enabled):
             client.stop_recorder()
 
         if world is not None:
             world.destroy()
+        
+        if len(record_cameras) > 0:
+            for camera in record_cameras:
+                camera.destroy()
+        
+        if data_saver is not None:
+            data_saver.close_HDF5()
 
+        world.world.apply_settings(carla.WorldSettings(synchronous_mode=False))
+        # syn
         pygame.quit()
 
 
@@ -201,12 +236,42 @@ def main():
         metavar='WIDTHxHEIGHT',
         default='1280x720',
         help='window resolution (default: 1280x720)')
+    argparser.add_argument(
+        '--save-name', 
+        default=None, 
+        type=str, 
+        help="Name of h5 file to save the data"
+    )
+    argparser.add_argument(
+        '-wi', '--cam_width', 
+        default=640, 
+        type=int, 
+        help="recording camera rgb sensor width in pixels"
+    )
+    argparser.add_argument(
+        '-he', '--cam_height', 
+        default=480, 
+        type=int, 
+        help="recording camera rgb sensor width in pixels"
+    )
+    argparser.add_argument(
+        '--style', 
+        default="aggressive", 
+        type=str, 
+        choices=['aggressive', 'cautious'],
+        help="Driving style (aggressive, cautious)"
+    )
     args = argparser.parse_args()
 
     args.rolename = 'hero'      # Needed for CARLA version
     args.filter = "vehicle.*"   # Needed for CARLA version
     args.gamma = 2.2   # Needed for CARLA version
     args.width, args.height = [int(x) for x in args.res.split('x')]
+
+    if args.save_name is None:
+        args.save_name = args.style
+    else:
+        args.save_name = "{}_{}".format(args.style, args.save_name)
 
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(format='%(levelname)s: %(message)s', level=log_level)

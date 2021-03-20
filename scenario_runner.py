@@ -559,7 +559,6 @@ def main():
 
     arguments = parser.parse_args()
     # pylint: enable=line-too-long
-    import pdb;pdb.set_trace()
     if arguments.list:
         print("Currently the following scenarios are supported:")
         print(*ScenarioConfigurationParser.get_list_of_scenarios(arguments.configFile), sep='\n')
