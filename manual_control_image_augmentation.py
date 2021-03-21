@@ -72,6 +72,10 @@ import carla
 from carla import ColorConverter as cc
 from utils.data_saver_utils import HDF5Saver
 from utils.sensor_utils import CarlaSyncMode, generate_rgb_cam, get_labels, image2numpy
+from utils.expl_utils import ExplDialog
+
+from tkinter import Tk, Text, TOP, BOTH, X, N, LEFT, RIGHT, BOTTOM, Message, W
+from tkinter.ttk import Frame, Label, Entry, Button
 
 import argparse
 import collections
@@ -181,6 +185,16 @@ class World(object):
         self.recording_start = 0
         self.constant_velocity_enabled = False
 
+        self.current_explanation = ''
+        self.current_description = ''
+
+    def get_expl_desc(self):
+        return self.current_explanation, self.current_description
+
+    def set_expl_desc(self, expl, desc):
+        self.current_explanation = expl
+        self.current_description = desc
+        
     def restart(self):
         self.player_max_speed = 1.589
         self.player_max_speed_fast = 3.713
@@ -373,6 +387,20 @@ class KeyboardControl(object):
                         client.start_recorder("manual_recording.rec")
                         world.recording_enabled = True
                         world.hud.notification("Recorder is ON")
+                elif event.key == K_p:
+                    # print(200)
+                    root = Tk()
+                    root.geometry("700x600")
+                    app = ExplDialog(world.world)
+                    root.mainloop()
+
+                    try:
+                        root.destroy()
+                    except:
+                        pass
+                    
+                    world.set_expl_desc(*app.get_expl_desc())
+
                 if isinstance(self._control, carla.VehicleControl):
                     if event.key == K_q:
                         self._control.gear = 1 if self._control.reverse else -1
@@ -955,8 +983,8 @@ def game_loop(args):
         hud = HUD(args.width, args.height)
         
         ## Setting Map (Town01)
-        # world = World(client.load_world(args.map), hud, args)
-        world = WorldSR(client.get_world(), hud, args) 
+        world = World(client.load_world(args.map), hud, args)
+        # world = WorldSR(client.get_world(), hud, args) 
         controller = KeyboardControl(world, args.autopilot, args.style)
         
         attachment = carla.AttachmentType
@@ -991,7 +1019,9 @@ def game_loop(args):
                     right_image = image2numpy(right_image)
                     left_image = image2numpy(left_image)
 
-                    data_saver.record_data(middle_image, right_image, left_image, labels_dict)
+                    current_explanation, current_description = world.get_expl_desc()
+                    print(f"desc+expl {current_description}. {current_explanation}. ")
+                    data_saver.record_data(middle_image, right_image, left_image, labels_dict, current_explanation, current_description)
                 
                 else:
                     if data_saver is not None:
