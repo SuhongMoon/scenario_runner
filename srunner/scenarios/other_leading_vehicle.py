@@ -49,7 +49,7 @@ class OtherLeadingVehicle(BasicScenario):
         self._map = CarlaDataProvider.get_map()
         self._first_vehicle_location = 35
         self._second_vehicle_location = self._first_vehicle_location + 1
-        self._ego_vehicle_drive_distance = self._first_vehicle_location * 4
+        self._ego_vehicle_drive_distance = self._first_vehicle_location * 400
         self._first_vehicle_speed = 55
         self._second_vehicle_speed = 45
         self._reference_waypoint = self._map.get_waypoint(config.trigger_points[0].location)
