@@ -47,7 +47,7 @@ from __future__ import print_function
 import carla
 
 from utils.manual_control_utils import World, HUD, KeyboardControl, CameraManager, CollisionSensor, LaneInvasionSensor, GnssSensor, IMUSensor
-from utils.sensor_utils import CarlaSyncMode, get_labels, parsing_data
+from utils.sensor_utils import CarlaSyncMode, get_labels
 from utils.data_saver_utils import HDF5Saver
 
 import os
@@ -142,8 +142,8 @@ def game_loop(args):
             pygame.HWSURFACE | pygame.DOUBLEBUF)
 
         hud = HUD(args.width, args.height)
-        # world = WorldSR(client.get_world(), hud, args) 
-        world = World(client.get_world(), hud, args) # Debugging
+        world = WorldSR(client.get_world(), hud, args) 
+        # world = World(client.get_world(), hud, args) # Debugging
         controller = KeyboardControl(world, args.autopilot)
         clock = pygame.time.Clock()
 

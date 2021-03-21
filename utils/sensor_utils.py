@@ -7,22 +7,6 @@ import queue
 
 from carla import ColorConverter as cc
 
-
-labels_list = [
-            "acceleartion", 
-            "velocity", 
-            "speed", 
-            "location", 
-            "rotation",
-            "brake",
-            "gear",
-            "hand_brake",
-            "manual_gear_shift",
-            "reverse",
-            "steer",
-            "throttle"
-        ]
-
 def image2numpy(image):
     image.convert(cc.Raw)
     array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
