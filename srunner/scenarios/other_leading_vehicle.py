@@ -41,7 +41,7 @@ class OtherLeadingVehicle(BasicScenario):
     """
 
     def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True,
-                 timeout=80):
+                 timeout=20):
         """
         Setup all relevant parameters and create scenario
         """
@@ -49,9 +49,9 @@ class OtherLeadingVehicle(BasicScenario):
         self._map = CarlaDataProvider.get_map()
         self._first_vehicle_location = 35
         self._second_vehicle_location = self._first_vehicle_location + 1
-        self._ego_vehicle_drive_distance = self._first_vehicle_location * 400
-        self._first_vehicle_speed = 55
-        self._second_vehicle_speed = 45
+        self._ego_vehicle_drive_distance = self._first_vehicle_location * 6
+        self._first_vehicle_speed = 55 / 2
+        self._second_vehicle_speed = 45 / 2
         self._reference_waypoint = self._map.get_waypoint(config.trigger_points[0].location)
         self._other_actor_max_brake = 1.0
         self._first_actor_transform = None
@@ -110,7 +110,7 @@ class OtherLeadingVehicle(BasicScenario):
         keep_velocity.add_child(InTriggerDistanceToVehicle(self.other_actors[0], self.ego_vehicles[0], 55))
 
         # Decelerating actor sequence behavior
-        decelerate = self._first_vehicle_speed / 3.2
+        decelerate = self._first_vehicle_speed / (3.2 * 1)
         leading_actor_sequence_behavior.add_child(keep_velocity)
         leading_actor_sequence_behavior.add_child(WaypointFollower(self.other_actors[0], decelerate,
                                                                    avoid_collision=True))
